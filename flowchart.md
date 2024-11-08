@@ -1,3 +1,4 @@
+```mermaid
 flowchart TD
     subgraph Frontend["Frontend (Next.js + Tailwind)"]
         UI[Dashboard UI]
