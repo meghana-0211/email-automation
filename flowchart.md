@@ -4,7 +4,7 @@ flowchart TD
         UI[Dashboard UI]
         Forms[Forms & Controls]
         Analytics[Analytics Display]
-        RT[Real-time Updates]
+        RT[Real-time Update]
     end
 
     subgraph Backend["Backend (FastAPI)"]
