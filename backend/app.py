@@ -1,4 +1,4 @@
-# app/main.py
+''''# app/main.py
 from fastapi import FastAPI, BackgroundTasks
 from fastapi_mail import FastMail, MessageSchema
 from redis import Redis
@@ -165,4 +165,6 @@ class EmailAutomationSystem:
         """Update email status in database"""
         # Implementation for status tracking
         pass
+
+'''
 
