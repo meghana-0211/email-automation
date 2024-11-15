@@ -74,7 +74,7 @@ const Dashboard = () => {
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-lg font-medium">CSV Upload</h3>
+                  <h3 className="text-lg font-bold text-black">CSV Upload</h3>
                   <Input 
                     type="file" 
                     accept=".csv"
@@ -83,7 +83,7 @@ const Dashboard = () => {
                   />
                 </div>
                 <div>
-                  <h3 className="text-lg font-medium">Google Sheets Integration</h3>
+                  <h3 className="text-lg font-bold text-black">Google Sheets Integration</h3>
                   <Input 
                     type="text"
                     placeholder="Enter Google Sheets URL"
@@ -106,7 +106,7 @@ const Dashboard = () => {
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-lg font-medium">Available Fields</h3>
+                  <h3 className="text-lg font-bold text-black">Available Fields</h3>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {availableFields.map((field, index) => (
                       <Button
@@ -120,7 +120,7 @@ const Dashboard = () => {
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-lg font-medium">Template Content</h3>
+                  <h3 className="text-lg font-bold text-black">Template Content</h3>
                   <Textarea
                     value={emailTemplate}
                     onChange={(e) => setEmailTemplate(e.target.value)}
@@ -144,7 +144,7 @@ const Dashboard = () => {
             <CardContent>
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-lg font-medium">Email Service Provider</h3>
+                  <h3 className="text-lg font-bold text-black">Email Service Provider</h3>
                   <Input 
                     type="text"
                     placeholder="API Key"
@@ -152,7 +152,7 @@ const Dashboard = () => {
                   />
                 </div>
                 <div>
-                  <h3 className="text-lg font-medium">Sending Limits</h3>
+                  <h3 className="text-lg font-bold text-black">Sending Limits</h3>
                   <div className="grid grid-cols-2 gap-4 mt-2">
                     <Input 
                       type="number"
@@ -179,7 +179,7 @@ const Dashboard = () => {
                 <CardTitle>Total Sent</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-2xl font-bold">0</p>
+                <p className="text-lg font-bold text-black">0</p>
               </CardContent>
             </Card>
             <Card>
@@ -187,7 +187,7 @@ const Dashboard = () => {
                 <CardTitle>Pending</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-2xl font-bold">0</p>
+                <p className="text-lg font-bold text-black">0</p>
               </CardContent>
             </Card>
             <Card>
@@ -195,7 +195,7 @@ const Dashboard = () => {
                 <CardTitle>Delivered</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-2xl font-bold">0</p>
+                <p className="text-lg font-bold text-black">0</p>
               </CardContent>
             </Card>
             <Card>
@@ -203,7 +203,7 @@ const Dashboard = () => {
                 <CardTitle>Failed</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-2xl font-bold">0</p>
+                <p className="text-lg font-bold text-black">0</p>
               </CardContent>
             </Card>
           </div>
