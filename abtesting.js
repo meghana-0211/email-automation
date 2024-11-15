@@ -138,3 +138,7 @@ const ABTestingDashboard = ({ campaignId }) => {
             </ResponsiveContainer>
           </div>
         </CardContent>
+      </Card>
+    </div>
+  )
+}
