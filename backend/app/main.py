@@ -25,6 +25,51 @@ from email.mime.multipart import MIMEMultipart
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.date import DateTrigger
 import uuid
+import logging
+from logging.handlers import RotatingFileHandler
+from typing import Dict, List, Optional, Union
+from enum import Enum
+from datetime import datetime, timezone
+from pydantic import BaseModel, EmailStr, validator
+from fastapi.responses import JSONResponse
+
+class WebhookEvent(BaseModel):
+    event_type: str
+    message_id: str
+    timestamp: datetime
+    recipient: EmailStr
+    metadata: Dict[str, any]
+
+class EmailMetrics(BaseModel):
+    sent: int
+    delivered: int
+    opened: int
+    bounced: int
+    failed: int
+    delivery_rate: float
+    open_rate: float
+
+class RateLimitConfig(BaseModel):
+    emails_per_hour: int
+    max_batch_size: int
+    concurrent_limit: int
+
+
+
+
+def setup_logging():
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            RotatingFileHandler(
+                'app.log',
+                maxBytes=10000000,  # 10MB
+                backupCount=5
+            ),
+            logging.StreamHandler()
+        ]
+    )
 
 # Setup logging
 setup_logging()
@@ -315,4 +360,4 @@ async def shutdown_event():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)    
