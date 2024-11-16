@@ -1,422 +1,437 @@
-# Email Automation Dashboard
+# Advanced Email Automation Dashboard
 
-A sophisticated email automation system featuring LLM-powered personalization, real-time analytics, and advanced campaign management capabilities.
+An enterprise-grade email automation system featuring LLM-powered personalization, real-time analytics, and sophisticated campaign management capabilities.
 
-![Dashboard Demo](demo-dashboard.gif)
+![Build Status](https://github.com/yourusername/email-automation/workflows/CI/badge.svg)
+[![Coverage Status](https://coveralls.io/repos/github/yourusername/email-automation/badge.svg?branch=main)](https://coveralls.io/github/yourusername/email-automation?branch=main)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## 📑 Table of Contents
-- [Key Features](#-key-features)
 - [System Architecture](#-system-architecture)
-- [Installation](#-installation)
-- [Configuration](#-configuration)
-- [Usage Guide](#-usage-guide)
+- [Features](#-features)
+- [Technical Stack](#-technical-stack)
+- [Getting Started](#-getting-started)
+- [Development Guide](#-development-guide)
+- [Production Deployment](#-production-deployment)
 - [API Documentation](#-api-documentation)
-- [Development](#-development)
-- [Testing](#-testing)
-- [Deployment](#-deployment)
-- [Security](#-security)
-- [Troubleshooting](#-troubleshooting)
 - [Contributing](#-contributing)
-- [License](#-license)
-
-## ✨ Key Features
-
-### Email Management
-- **Smart Personalization**: LLM-powered content generation with custom prompts
-- **Template System**: Dynamic field replacement with validation
-- **Batch Processing**: Efficient handling of large email campaigns
-- **Multi-ESP Support**: SendGrid, Amazon SES, and Mailgun integration
-
-### Data Handling
-- **Google Sheets Integration**: Real-time sync with spreadsheet data
-- **CSV Import**: Bulk data import with validation
-- **Column Mapping**: Intelligent field mapping and validation
-- **Data Preprocessing**: Automatic email validation and formatting
-
-### Analytics & Tracking
-- **Real-time Dashboard**: Live campaign performance metrics
-- **Advanced Analytics**: Conversion tracking and engagement metrics
-- **Custom Reports**: Exportable reports in multiple formats
-- **Webhook Integration**: Real-time delivery status updates
-
-### Campaign Management
-- **Scheduling System**: Timezone-aware scheduling
-- **Smart Throttling**: Automatic rate limiting based on ESP constraints
-- **Queue Management**: Priority queuing with retry mechanisms
-- **Error Handling**: Comprehensive error tracking and reporting
 
 ## 🏗 System Architecture
 
-### Component Overview
 ```mermaid
-graph TD
-    A[Frontend - Next.js] -->|WebSocket| B[Backend - FastAPI]
-    A -->|REST API| B
-    B -->|Queue Jobs| C[Redis Queue]
-    B -->|Store Data| D[PostgreSQL]
-    B -->|Send Emails| E[ESP Service]
-    B -->|Cache| F[Redis Cache]
-    B -->|Analytics| G[Analytics Service]
-    H[Scheduler] -->|Triggers| C
-    I[Worker Processes] -->|Process| C
+flowchart TD
+    subgraph Frontend["Frontend (Next.js + Tailwind)"]
+        UI[Dashboard UI]
+        Forms[Forms & Controls]
+        Analytics[Analytics Display]
+        RT[Real-time Update]
+    end
+
+    subgraph Backend["Backend (FastAPI)"]
+        API[API Layer]
+        Auth[Auth Service]
+        Queue[Queue Manager]
+        Scheduler[Task Scheduler]
+        Generator[Email Generator]
+        Monitor[Status Monitor]
+    end
+
+    subgraph Services["External Services"]
+        DB[(Firestore)]
+        Redis[(Redis)]
+        ESP[Email Service Provider]
+        LLM[LLM API]
+        Sheets[Google Sheets API]
+    end
+
+    UI --> API
+    Forms --> API
+    API --> Auth
+    Auth --> DB
+    API --> Queue
+    Queue --> Redis
+    Queue --> Scheduler
+    Scheduler --> Generator
+    Generator --> LLM
+    Generator --> ESP
+    ESP --> Monitor
+    Monitor --> DB
+    Monitor --> RT
+    API --> Sheets
 ```
 
-### Data Flow
-1. **Authentication Flow**
-   - OAuth2 with JWT tokens
-   - Redis session storage
-   - Rate limiting middleware
+## ✨ Features
 
-2. **Email Processing Flow**
-   ```
-   User Request → API Gateway → Queue Manager → Worker Processes → ESP
-        ↓                           ↓                ↓
-   Validation           Status Updates        Error Handling
-   ```
+### Email Campaign Management
+- **Smart Content Generation**
+  ```python
+  # backend/services/email_generator.py
+  class EmailGenerator:
+      def __init__(self, llm_client):
+          self.llm_client = llm_client
+          
+      async def generate_personalized_content(self, template: str, context: dict) -> str:
+          prompt = self._build_prompt(template, context)
+          response = await self.llm_client.generate(prompt)
+          return self._post_process(response)
+  ```
 
-3. **Analytics Flow**
-   ```
-   ESP Webhooks → Event Processor → Analytics Service → Real-time Updates
-                        ↓
-                  Database Storage
-   ```
+- **Dynamic Data Integration**
+  ```python
+  # backend/services/data_processor.py
+  class DataProcessor:
+      async def process_sheet_data(self, sheet_id: str) -> List[Dict]:
+          data = await self.sheets_client.get_sheet_data(sheet_id)
+          return self.validate_and_transform(data)
+          
+      def validate_and_transform(self, data: List[Dict]) -> List[Dict]:
+          schema = self.get_validation_schema()
+          return [self.validate_row(row, schema) for row in data]
+  ```
 
-## 🚀 Installation
+### Real-time Campaign Monitoring
+- **WebSocket Updates**
+  ```typescript
+  // frontend/lib/websocket.ts
+  export class CampaignMonitor {
+    private ws: WebSocket;
+    private subscribers: Set<(data: UpdateData) => void>;
+
+    constructor(campaignId: string) {
+      this.ws = new WebSocket(`${WS_URL}/campaign/${campaignId}`);
+      this.subscribers = new Set();
+      
+      this.ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        this.notifySubscribers(data);
+      };
+    }
+
+    subscribe(callback: (data: UpdateData) => void) {
+      this.subscribers.add(callback);
+      return () => this.subscribers.delete(callback);
+    }
+  }
+  ```
+
+### Advanced Queue Management
+```python
+# backend/services/queue_manager.py
+class QueueManager:
+    def __init__(self, redis_client: Redis):
+        self.redis = redis_client
+        self.queues = {
+            'high': Queue('high', connection=redis_client),
+            'default': Queue('default', connection=redis_client),
+            'low': Queue('low', connection=redis_client)
+        }
+    
+    async def enqueue_campaign(self, campaign: Campaign) -> str:
+        priority = self._determine_priority(campaign)
+        job = self.queues[priority].enqueue(
+            'process_campaign',
+            campaign.id,
+            job_timeout='1h'
+        )
+        return job.id
+```
+
+## 🛠 Technical Stack
+
+### Backend Components
+- **FastAPI Application Structure**
+  ```
+  backend/
+  ├── app/
+  │   ├── api/
+  │   │   ├── routes/
+  │   │   │   ├── auth.py
+  │   │   │   ├── campaigns.py
+  │   │   │   └── analytics.py
+  │   │   └── dependencies.py
+  │   ├── core/
+  │   │   ├── config.py
+  │   │   └── security.py
+  │   ├── services/
+  │   │   ├── email_generator.py
+  │   │   ├── queue_manager.py
+  │   │   └── campaign_monitor.py
+  │   └── models/
+  │       ├── campaign.py
+  │       └── user.py
+  ├── alembic/
+  └── tests/
+  ```
+
+### Frontend Architecture
+```typescript
+// frontend/lib/hooks/useCampaign.ts
+export function useCampaign(campaignId: string) {
+  const [status, setStatus] = useState<CampaignStatus>();
+  const [analytics, setAnalytics] = useState<Analytics>();
+  
+  useEffect(() => {
+    const monitor = new CampaignMonitor(campaignId);
+    const unsubscribe = monitor.subscribe((data) => {
+      setStatus(data.status);
+      setAnalytics(data.analytics);
+    });
+    
+    return () => unsubscribe();
+  }, [campaignId]);
+  
+  return { status, analytics };
+}
+```
+
+## 🚀 Getting Started
 
 ### Prerequisites
 - Python 3.9+
 - Node.js 16+
-- Firebase
-- Redis 6+
-- Docker & Docker Compose (optional)
+- Docker & Docker Compose
+- Google Cloud account
+- ESP account (SendGrid/Mailgun/AWS SES)
 
 ### Local Development Setup
 
-1. **Clone and Configure**
+1. **Clone and Configure Environment**
    ```bash
    git clone https://github.com/yourusername/email-automation
    cd email-automation
    
-   # Create virtual environment
-   python -m venv venv
-   source venv/bin/activate  # or `venv\Scripts\activate` on Windows
-   
-   # Install dependencies
-   pip install -r requirements.txt
-   pip install -r requirements-dev.txt  # Development dependencies
-   
-   # Setup pre-commit hooks
-   pre-commit install
-   ```
-
-2. **Database Setup**
-   ```bash
-   # Start PostgreSQL and Redis
-   docker-compose up -d postgres redis
-   
-   # Run migrations
-   alembic upgrade head
-   
-   # Seed initial data (optional)
-   python scripts/seed_data.py
-   ```
-
-3. **Frontend Setup**
-   ```bash
-   cd frontend
-   npm install
-   
-   # Setup environment
-   cp .env.example .env.local
-   # Edit .env.local with your settings
-   ```
-
-4. **Start Development Servers**
-   ```bash
-   # Terminal 1: Backend
+   # Setup backend
    cd backend
-   uvicorn main:app --reload --port 8000
+   python -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   cp .env.example .env
    
-   # Terminal 2: Frontend
+   # Setup frontend
+   cd ../frontend
+   npm install
+   cp .env.example .env.local
+   ```
+
+2. **Start Development Services**
+   ```bash
+   # Start infrastructure services
+   docker-compose up -d redis firestore
+   
+   # Start backend
+   cd backend
+   uvicorn app.main:app --reload
+   
+   # Start frontend
    cd frontend
    npm run dev
-   
-   # Terminal 3: Worker
-   cd backend
-   rq worker email-queue
    ```
 
-### Docker Setup
-```bash
-# Build and start all services
-docker-compose up --build
+## 🔧 Development Guide
 
-# Start specific services
-docker-compose up postgres redis worker
-```
-
-## ⚙️ Configuration
-
-### Environment Variables
-
-#### Backend (.env)
-```ini
-# Database
-DATABASE_URL=postgresql://user:pass@localhost:5432/dbname
-REDIS_URL=redis://localhost:6379/0
-
-# Authentication
-JWT_SECRET=your-secret-key
-JWT_ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-
-# Email Service Providers
-SENDGRID_API_KEY=your-sendgrid-key
-AWS_ACCESS_KEY_ID=your-aws-key
-AWS_SECRET_ACCESS_KEY=your-aws-secret
-MAILGUN_API_KEY=your-mailgun-key
-
-# External Services
-GOOGLE_SHEETS_CREDENTIALS=path/to/credentials.json
-LLM_API_KEY=your-llm-api-key
-
-# Application Settings
-APP_ENV=development
-DEBUG=true
-CORS_ORIGINS=http://localhost:3000
-RATE_LIMIT_PER_MINUTE=60
-```
-
-#### Frontend (.env.local)
-```ini
-NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_WS_URL=ws://localhost:8000/ws
-```
-
-### ESP Configuration
-
-#### SendGrid Setup
+### Authentication Implementation
 ```python
-# backend/config/sendgrid.py
-from sendgrid import SendGridAPIClient
+# backend/app/core/security.py
+from fastapi_security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from datetime import datetime, timedelta
 
-sg = SendGridAPIClient(api_key=os.environ.get('SENDGRID_API_KEY'))
+class SecurityService:
+    def __init__(self, settings: Settings):
+        self.settings = settings
+        
+    def create_access_token(self, data: dict) -> str:
+        expire = datetime.utcnow() + timedelta(minutes=30)
+        to_encode = {**data, "exp": expire}
+        return jwt.encode(
+            to_encode, 
+            self.settings.SECRET_KEY, 
+            algorithm=self.settings.ALGORITHM
+        )
+```
 
-def configure_webhooks():
-    sg.client.user.webhooks.event.settings.patch(
-        request_body={
-            "enabled": True,
-            "url": "https://your-domain.com/api/webhooks/sendgrid",
-            "group_resubscribe": True,
-            "delivered": True,
-            "spam_report": True,
-            "bounce": True,
-            "open": True,
-            "click": True,
+### Campaign Service
+```python
+# backend/app/services/campaign_service.py
+class CampaignService:
+    def __init__(
+        self,
+        queue_manager: QueueManager,
+        email_generator: EmailGenerator,
+        monitor: CampaignMonitor
+    ):
+        self.queue_manager = queue_manager
+        self.email_generator = email_generator
+        self.monitor = monitor
+    
+    async def create_campaign(self, data: CampaignCreate) -> Campaign:
+        campaign = await self._create_campaign_record(data)
+        await self.queue_manager.enqueue_campaign(campaign)
+        return campaign
+```
+
+## 📦 Production Deployment
+
+### Infrastructure Setup
+```terraform
+# terraform/main.tf
+resource "google_cloud_run_service" "api" {
+  name     = "email-automation-api"
+  location = "us-central1"
+  
+  template {
+    spec {
+      containers {
+        image = "gcr.io/project/email-automation-api"
+        
+        env {
+          name  = "DATABASE_URL"
+          value = google_firestore_database.main.url
         }
+      }
+    }
+  }
+}
+```
+
+### Monitoring Setup
+```python
+# backend/app/core/monitoring.py
+from opentelemetry import trace
+from prometheus_client import Counter, Histogram
+
+class Metrics:
+    email_sent = Counter(
+        'emails_sent_total',
+        'Number of emails sent',
+        ['status']
+    )
+    
+    generation_time = Histogram(
+        'email_generation_seconds',
+        'Time spent generating emails'
     )
 ```
 
-#### Amazon SES Setup
+## 📚 API Documentation
+
+### Campaign Endpoints
 ```python
-# backend/config/ses.py
-import boto3
-
-ses = boto3.client(
-    'ses',
-    aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
-    aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY'),
-    region_name='us-east-1'
-)
-
-def configure_sns():
-    # Set up SNS topic for bounces and complaints
-    # Implementation details...
-```
-
-## 📝 Usage Guide
-
-### Authentication
-
-```typescript
-// frontend/lib/auth.ts
-async function login(email: string, password: string) {
-  const response = await fetch('/api/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  });
-  
-  if (!response.ok) {
-    throw new Error('Authentication failed');
-  }
-  
-  const data = await response.json();
-  return data.token;
-}
-```
-
-### Campaign Creation
-
-```typescript
-// frontend/lib/campaign.ts
-interface CampaignData {
-  templateId: string;
-  recipients: string[];
-  scheduledTime?: Date;
-  throttleRate?: number;
-}
-
-async function createCampaign(data: CampaignData) {
-  // Implementation details...
-}
-```
-
-### WebSocket Integration
-
-```typescript
-// frontend/lib/websocket.ts
-function useWebSocket(onMessage: (data: any) => void) {
-  useEffect(() => {
-    const ws = new WebSocket(process.env.NEXT_PUBLIC_WS_URL);
+@router.post("/campaigns/", response_model=Campaign)
+async def create_campaign(
+    data: CampaignCreate,
+    service: CampaignService = Depends(get_campaign_service)
+):
+    """
+    Create a new email campaign.
     
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      onMessage(data);
-    };
+    Parameters:
+    - template_id: ID of the email template
+    - recipients: List of recipient email addresses
+    - schedule: Optional scheduling parameters
+    - throttle: Optional throttling configuration
+    """
+    return await service.create_campaign(data)
+```
+
+## 🔒 Security Features
+
+### Rate Limiting
+```python
+# backend/app/core/middleware.py
+from fastapi import Request
+from redis import Redis
+
+class RateLimiter:
+    def __init__(self, redis: Redis):
+        self.redis = redis
+        
+    async def check_rate_limit(self, request: Request):
+        key = f"rate_limit:{request.client.host}"
+        current = self.redis.incr(key)
+        if current == 1:
+            self.redis.expire(key, 60)
+        return current <= 60
+```
+
+### Input Validation
+```python
+# backend/app/models/campaign.py
+from pydantic import BaseModel, EmailStr, validator
+
+class CampaignCreate(BaseModel):
+    template_id: str
+    recipients: List[EmailStr]
+    schedule: Optional[ScheduleConfig]
     
-    return () => ws.close();
-  }, [onMessage]);
-}
+    @validator('recipients')
+    def validate_recipients(cls, v):
+        if len(v) > 1000:
+            raise ValueError('Maximum 1000 recipients per campaign')
+        return v
 ```
 
 ## 🧪 Testing
 
 ### Backend Tests
-```bash
-# Run all tests
-pytest
+```python
+# backend/tests/services/test_campaign_service.py
+import pytest
+from app.services.campaign_service import CampaignService
 
-# Run specific test file
-pytest tests/test_email_service.py
-
-# Run with coverage
-pytest --cov=app tests/
+async def test_campaign_creation():
+    service = CampaignService(
+        queue_manager=MockQueueManager(),
+        email_generator=MockEmailGenerator(),
+        monitor=MockCampaignMonitor()
+    )
+    
+    campaign = await service.create_campaign(
+        CampaignCreate(
+            template_id="test",
+            recipients=["test@example.com"]
+        )
+    )
+    
+    assert campaign.status == "queued"
 ```
 
 ### Frontend Tests
-```bash
-# Run Jest tests
-npm test
+```typescript
+// frontend/tests/components/CampaignForm.test.tsx
+import { render, fireEvent, waitFor } from '@testing-library/react'
+import { CampaignForm } from '@/components/CampaignForm'
 
-# Run with coverage
-npm test -- --coverage
-
-# Run E2E tests
-npm run cypress:open
+describe('CampaignForm', () => {
+  it('validates recipient emails', async () => {
+    const { getByLabelText, getByText } = render(<CampaignForm />)
+    
+    fireEvent.change(getByLabelText('Recipients'), {
+      target: { value: 'invalid-email' },
+    })
+    
+    await waitFor(() => {
+      expect(getByText('Invalid email format')).toBeInTheDocument()
+    })
+  })
+})
 ```
-
-### Load Testing
-```bash
-# Using k6
-k6 run load_tests/email_campaign.js
-```
-
-## 📦 Deployment
-
-### Production Checklist
-1. **Environment Configuration**
-   - Set production environment variables
-   - Configure SSL certificates
-   - Set up monitoring services
-
-2. **Database Setup**
-   - Run production migrations
-   - Set up backup strategy
-   - Configure connection pooling
-
-3. **Scaling Configuration**
-   - Configure auto-scaling rules
-   - Set up load balancers
-   - Configure CDN
-
-### Deployment Commands
-```bash
-# Build production assets
-cd frontend && npm run build
-
-# Start production server
-cd backend && gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker
-```
-
-## 🔐 Security
-
-### Security Features
-- **Authentication**: JWT with refresh tokens
-- **Authorization**: Role-based access control
-- **Rate Limiting**: Per-user and per-IP limits
-- **Input Validation**: Request validation using Pydantic
-- **XSS Protection**: Content Security Policy headers
-- **CSRF Protection**: Double submit cookie pattern
-- **SQL Injection Prevention**: Parameterized queries
-- **Security Headers**: HSTS, X-Frame-Options, etc.
-
-### Security Best Practices
-1. Regular dependency updates
-2. Security audit logging
-3. Regular penetration testing
-4. Secure session handling
-5. Data encryption at rest
-
-## 🔧 Troubleshooting
-
-### Common Issues
-
-1. **Redis Connection Issues**
-   ```bash
-   # Check Redis connection
-   redis-cli ping
-   
-   # Clear Redis cache
-   redis-cli FLUSHALL
-   ```
-
-2. **Database Migration Issues**
-   ```bash
-   # Reset migrations
-   alembic downgrade base
-   
-   # Recreate migrations
-   alembic revision --autogenerate -m "reset"
-   ```
-
-3. **Worker Process Issues**
-   ```bash
-   # Check worker status
-   rq info
-   
-   # Clear failed jobs
-   rq empty failed
-   ```
 
 ## 🤝 Contributing
 
 ### Development Workflow
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests
-5. Submit a pull request
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'feat: add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
 
 ### Code Style
-- Follow PEP 8 for Python code
-- Use ESLint and Prettier for JavaScript/TypeScript
-- Write descriptive commit messages
-- Document new features
+- Python: Black formatter, isort for imports
+- TypeScript: Prettier + ESLint
+- Commit messages: Conventional Commits
 
 ## 📄 License
 
 MIT License - see [LICENSE.md](LICENSE.md)
-
-
 
