@@ -12,12 +12,16 @@ from groq import Groq
 from dotenv import load_dotenv
 from firebase_admin import credentials, firestore, initialize_app
 from google.cloud.firestore import SERVER_TIMESTAMP
+from ses_integration import SESService
+from fastapi import BackgroundTasks
+
+
 
 # Load environment variables
 load_dotenv()
 
 # Initialize Firebase
-cred = credentials.Certificate("C:\Users\Megha\OneDrive\Desktop\breakoutai\email-automation\backend\app\firebase-key.json")
+cred = credentials.Certificate(r"C:\Users\Megha\OneDrive\Desktop\breakoutai\email-automation\backend\app\firebase-key.json")
 initialize_app(cred)
 db = firestore.client()
 
@@ -146,24 +150,23 @@ async def get_jobs():
 async def get_analytics():
     """Get email analytics"""
     try:
-        # Query Firestore for counts
+        # Get email statistics from SES
+        email_stats = await ses_service.get_email_statistics()
+        
+        # Get job statistics from Firestore
         completed = db.collection('jobs').where('status', '==', 'completed').get()
         pending = db.collection('jobs').where('status', '==', 'pending').get()
         failed = db.collection('jobs').where('status', '==', 'failed').get()
         
-        total_sent = len(completed)
-        total_pending = len(pending)
-        total_failed = len(failed)
-        
         return {
-            "total_sent": total_sent,
-            "pending": total_pending,
-            "failed": total_failed,
-            "delivery_rate": (total_sent / (total_sent + total_failed)) * 100 if (total_sent + total_failed) > 0 else 0
+            **email_stats,
+            "jobs_completed": len(completed),
+            "jobs_pending": len(pending),
+            "jobs_failed": len(failed)
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
+    
 # Email generation with LLM
 async def generate_email_content(template: str, data: dict):
     """Generate personalized email content using LLM"""
@@ -201,15 +204,22 @@ async def process_email_queue():
                 # Generate and send emails
                 for recipient in job["recipients"]:
                     email_content = await generate_email_content(template['content'], recipient)
-                    # TODO: Send email using configured ESP
-                    print(f"Would send email to {recipient.get('email')}")
-                
-                # Update job status in Firestore
-                job_ref = db.collection('jobs').document(job["job_id"])
-                job_ref.update({
-                    'status': 'completed',
-                    'completed_at': SERVER_TIMESTAMP
-                })
+                    
+                    # Send email using SES
+                    message_id = await ses_service.send_email(
+                        recipient=recipient.get('email'),
+                        subject=template.get('subject', 'Your Email Subject'),
+                        body_html=email_content
+                    )
+                    
+                    # Update job status in Firestore
+                    job_ref = db.collection('jobs').document(job["job_id"])
+                    job_ref.update({
+                        'status': 'completed',
+                        'completed_at': SERVER_TIMESTAMP,
+                        'message_id': message_id
+                    })
+                    
             except Exception as e:
                 print(f"Error processing job {job['job_id']}: {str(e)}")
                 if 'job_ref' in locals():
@@ -226,6 +236,20 @@ async def startup_event():
     import asyncio
     asyncio.create_task(process_email_queue())
 
+@app.post("/api/ses/webhook")
+async def ses_webhook(background_tasks: BackgroundTasks):
+    """Handle SES webhook notifications"""
+    try:
+        notification = await request.json()
+        
+        # Verify SNS message signature
+        # Process notification in background
+        background_tasks.add_task(ses_service.process_sns_notification, notification)
+        
+        return {"status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
