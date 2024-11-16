@@ -5,6 +5,17 @@ import logging
 import time
 from typing import Callable
 import jwt
+import uuid
+from pydantic import BaseSettings
+
+class Settings(BaseSettings):
+    API_KEY: str
+
+    class Config:
+        env_file = ".env"  # Path to environment variables file
+
+settings = Settings()
+
 
 api_key_header = APIKeyHeader(name="X-API-Key")
 
