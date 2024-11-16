@@ -131,6 +131,14 @@ async def create_email_job(job: EmailJobCreate):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Add to SESService
+async def check_rate_limit(self):
+    current_count = redis_client.get('ses_daily_count')
+    if current_count and int(current_count) >= 50000:  # SES daily limit
+        raise HTTPException(status_code=429, detail="Daily sending limit reached")
+    redis_client.incr('ses_daily_count')
+    redis_client.expire('ses_daily_count', 86400)  # 24 hours
+
 @app.get("/api/jobs")
 async def get_jobs():
     """Get all jobs"""
