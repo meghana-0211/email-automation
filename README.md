@@ -1,437 +1,219 @@
-# Advanced Email Automation Dashboard
 
-An enterprise-grade email automation system featuring LLM-powered personalization, real-time analytics, and sophisticated campaign management capabilities.
+# 🚀 **Custom Email Sender Application**
 
-![Build Status](https://github.com/yourusername/email-automation/workflows/CI/badge.svg)
-[![Coverage Status](https://coveralls.io/repos/github/yourusername/email-automation/badge.svg?branch=main)](https://coveralls.io/github/yourusername/email-automation?branch=main)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+## Overview
+This application is a state-of-the-art **email automation platform**, developed for **Breakout Consultancy's internship assessment**. It combines robust functionality with a sleek user interface to empower businesses with tools for **personalized email campaigns**, **data integration**, and **real-time performance tracking**.
 
-## 📑 Table of Contents
-- [System Architecture](#-system-architecture)
-- [Features](#-features)
-- [Technical Stack](#-technical-stack)
-- [Getting Started](#-getting-started)
-- [Development Guide](#-development-guide)
-- [Production Deployment](#-production-deployment)
-- [API Documentation](#-api-documentation)
-- [Contributing](#-contributing)
+---
 
-## 🏗 System Architecture
+## 🌟 **Features at a Glance**
+1. **📡 Data Integration**
+   - Seamless Google Sheets API support.
+   - CSV file uploads with automatic data parsing.
+   - Intelligent column mapping for faster workflows.
+
+2. **🎨 Email Customization**
+   - **AI-powered content generation** with Groq API.
+   - Templated emails with dynamic placeholders.
+   - Recipient-specific personalization for targeted campaigns.
+
+3. **⏳ Scheduling & Throttling**
+   - Schedule emails for precise delivery timing.
+   - Adjustable rate limiting to manage bulk sends.
+   - High-performance background processing.
+
+4. **📊 Real-Time Analytics**
+   - Track email delivery, open, and click rates.
+   - Exportable performance dashboards.
+   - In-app error reporting and retry mechanisms.
+
+5. **🔒 Security First**
+   - OAuth2 authentication for external integrations.
+   - API gateway with robust rate limiting.
+   - Secure data storage using Firestore.
+
+---
+
+## 📊 **Tech Stack**
 
 ```mermaid
 flowchart TD
-    subgraph Frontend["Frontend (Next.js + Tailwind)"]
-        UI[Dashboard UI]
+    subgraph Frontend["Frontend (Next.js + Tailwind CSS)"]
+        Dashboard[Dashboard UI]
         Forms[Forms & Controls]
-        Analytics[Analytics Display]
-        RT[Real-time Update]
+        Preferences[User Settings]
+        Analytics[Analytics Dashboard]
+        RealTime[WebSocket Updates]
     end
 
-    subgraph Backend["Backend (FastAPI)"]
+    subgraph Backend["Backend (FastAPI + Redis)"]
         API[API Layer]
-        Auth[Auth Service]
-        Queue[Queue Manager]
-        Scheduler[Task Scheduler]
-        Generator[Email Generator]
-        Monitor[Status Monitor]
+        Auth[Authentication Service]
+        Queue[Task Queue]
+        Scheduler[Email Scheduler]
+        Generator[AI-Powered Email Generator]
+        Monitor[Campaign Monitor]
+        AnalyticsProcessor[Analytics Engine]
+        Security[Security Middleware]
     end
 
     subgraph Services["External Services"]
-        DB[(Firestore)]
-        Redis[(Redis)]
-        ESP[Email Service Provider]
-        LLM[LLM API]
-        Sheets[Google Sheets API]
+        Firebase[(Firestore)]
+        Redis[(Redis Cache)]
+        ESP[(AWS SES, Mailgun, etc.)]
+        Groq[(Groq API for AI)]
+        GoogleSheets[(Google Sheets API)]
+        Observability[(Logging & Monitoring)]
     end
 
-    UI --> API
-    Forms --> API
+    Frontend --> API
     API --> Auth
-    Auth --> DB
+    Auth --> Firebase
     API --> Queue
-    Queue --> Redis
     Queue --> Scheduler
     Scheduler --> Generator
-    Generator --> LLM
     Generator --> ESP
     ESP --> Monitor
-    Monitor --> DB
-    Monitor --> RT
-    API --> Sheets
+    Monitor --> AnalyticsProcessor
+    AnalyticsProcessor --> Firebase
+    API -->|Real-time| RealTime
+    Backend --> Observability
 ```
 
-## ✨ Features
+---
 
-### Email Campaign Management
-- **Smart Content Generation**
-  ```python
-  # backend/services/email_generator.py
-  class EmailGenerator:
-      def __init__(self, llm_client):
-          self.llm_client = llm_client
-          
-      async def generate_personalized_content(self, template: str, context: dict) -> str:
-          prompt = self._build_prompt(template, context)
-          response = await self.llm_client.generate(prompt)
-          return self._post_process(response)
-  ```
+## 🛠️ **Prerequisites**
+Ensure you have the following before installation:
+- **Python**: Version 3.9 or above.
+- **Node.js**: Version 16 or above.
+- **AWS SES Account** with verified sender domains.
+- **Google Cloud Project** with Sheets API enabled.
+- **Groq API Key** for AI content generation.
+- **Firebase Project** for database services.
 
-- **Dynamic Data Integration**
-  ```python
-  # backend/services/data_processor.py
-  class DataProcessor:
-      async def process_sheet_data(self, sheet_id: str) -> List[Dict]:
-          data = await self.sheets_client.get_sheet_data(sheet_id)
-          return self.validate_and_transform(data)
-          
-      def validate_and_transform(self, data: List[Dict]) -> List[Dict]:
-          schema = self.get_validation_schema()
-          return [self.validate_row(row, schema) for row in data]
-  ```
+---
 
-### Real-time Campaign Monitoring
-- **WebSocket Updates**
-  ```typescript
-  // frontend/lib/websocket.ts
-  export class CampaignMonitor {
-    private ws: WebSocket;
-    private subscribers: Set<(data: UpdateData) => void>;
+## 🚀 **Installation Guide**
 
-    constructor(campaignId: string) {
-      this.ws = new WebSocket(`${WS_URL}/campaign/${campaignId}`);
-      this.subscribers = new Set();
-      
-      this.ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        this.notifySubscribers(data);
-      };
-    }
-
-    subscribe(callback: (data: UpdateData) => void) {
-      this.subscribers.add(callback);
-      return () => this.subscribers.delete(callback);
-    }
-  }
-  ```
-
-### Advanced Queue Management
-```python
-# backend/services/queue_manager.py
-class QueueManager:
-    def __init__(self, redis_client: Redis):
-        self.redis = redis_client
-        self.queues = {
-            'high': Queue('high', connection=redis_client),
-            'default': Queue('default', connection=redis_client),
-            'low': Queue('low', connection=redis_client)
-        }
-    
-    async def enqueue_campaign(self, campaign: Campaign) -> str:
-        priority = self._determine_priority(campaign)
-        job = self.queues[priority].enqueue(
-            'process_campaign',
-            campaign.id,
-            job_timeout='1h'
-        )
-        return job.id
+### **1. Clone the Repository**
+```bash
+git clone https://github.com/yourusername/email-automation.git
+cd email-automation
 ```
 
-## 🛠 Technical Stack
+---
 
-### Backend Components
-- **FastAPI Application Structure**
-  ```
-  backend/
-  ├── app/
-  │   ├── api/
-  │   │   ├── routes/
-  │   │   │   ├── auth.py
-  │   │   │   ├── campaigns.py
-  │   │   │   └── analytics.py
-  │   │   └── dependencies.py
-  │   ├── core/
-  │   │   ├── config.py
-  │   │   └── security.py
-  │   ├── services/
-  │   │   ├── email_generator.py
-  │   │   ├── queue_manager.py
-  │   │   └── campaign_monitor.py
-  │   └── models/
-  │       ├── campaign.py
-  │       └── user.py
-  ├── alembic/
-  └── tests/
-  ```
-
-### Frontend Architecture
-```typescript
-// frontend/lib/hooks/useCampaign.ts
-export function useCampaign(campaignId: string) {
-  const [status, setStatus] = useState<CampaignStatus>();
-  const [analytics, setAnalytics] = useState<Analytics>();
-  
-  useEffect(() => {
-    const monitor = new CampaignMonitor(campaignId);
-    const unsubscribe = monitor.subscribe((data) => {
-      setStatus(data.status);
-      setAnalytics(data.analytics);
-    });
-    
-    return () => unsubscribe();
-  }, [campaignId]);
-  
-  return { status, analytics };
-}
-```
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Python 3.9+
-- Node.js 16+
-- Docker & Docker Compose
-- Google Cloud account
-- ESP account (SendGrid/Mailgun/AWS SES)
-
-### Local Development Setup
-
-1. **Clone and Configure Environment**
+### **2. Backend Setup**
+1. **Set up a Virtual Environment**
    ```bash
-   git clone https://github.com/yourusername/email-automation
-   cd email-automation
-   
-   # Setup backend
-   cd backend
    python -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   cp .env.example .env
-   
-   # Setup frontend
-   cd ../frontend
-   npm install
-   cp .env.example .env.local
+   source venv/bin/activate  # For Windows: venv\Scripts\activate
    ```
 
-2. **Start Development Services**
+2. **Install Dependencies**
    ```bash
-   # Start infrastructure services
-   docker-compose up -d redis firestore
-   
-   # Start backend
-   cd backend
+   pip install -r requirements.txt
+   ```
+
+3. **Configure Environment Variables**
+   Create a `.env` file with:
+   ```plaintext
+   REDIS_URL=your_redis_url
+   GROQ_API_KEY=your_groq_api_key
+   GOOGLE_SHEETS_CREDENTIALS_PATH=/path/to/credentials.json
+   AWS_ACCESS_KEY_ID=your_access_key
+   AWS_SECRET_ACCESS_KEY=your_secret_key
+   AWS_REGION=your_region
+   SES_SENDER_EMAIL=meghana.sancheti@gmail.com
+   FIREBASE_CREDENTIALS_PATH=/path/to/firebase.json
+   RATE_LIMIT_EMAILS_PER_HOUR=100
+   MAX_BATCH_SIZE=1000
+   CONCURRENT_LIMIT=5
+   ```
+
+4. **Run the Backend**
+   ```bash
    uvicorn app.main:app --reload
-   
-   # Start frontend
+   ```
+
+---
+
+### **3. Frontend Setup**
+1. Navigate to the `frontend` directory:
+   ```bash
    cd frontend
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Start the development server:
+   ```bash
    npm run dev
    ```
 
-## 🔧 Development Guide
+---
 
-### Authentication Implementation
-```python
-# backend/app/core/security.py
-from fastapi_security import OAuth2PasswordBearer
-from jose import JWTError, jwt
-from datetime import datetime, timedelta
+## 🎨 **UI Snapshots**
 
-class SecurityService:
-    def __init__(self, settings: Settings):
-        self.settings = settings
-        
-    def create_access_token(self, data: dict) -> str:
-        expire = datetime.utcnow() + timedelta(minutes=30)
-        to_encode = {**data, "exp": expire}
-        return jwt.encode(
-            to_encode, 
-            self.settings.SECRET_KEY, 
-            algorithm=self.settings.ALGORITHM
-        )
-```
+### Dashboard View
+![Dashboard Screenshot](https://github.com/user-attachments/assets/cbce9cf5-c8d3-43f9-ba44-4630b254585e)
 
-### Campaign Service
-```python
-# backend/app/services/campaign_service.py
-class CampaignService:
-    def __init__(
-        self,
-        queue_manager: QueueManager,
-        email_generator: EmailGenerator,
-        monitor: CampaignMonitor
-    ):
-        self.queue_manager = queue_manager
-        self.email_generator = email_generator
-        self.monitor = monitor
-    
-    async def create_campaign(self, data: CampaignCreate) -> Campaign:
-        campaign = await self._create_campaign_record(data)
-        await self.queue_manager.enqueue_campaign(campaign)
-        return campaign
-```
+### Template Builder
+![Template Builder Screenshot](https://github.com/user-attachments/assets/940ae04f-d280-4a2a-a030-4d4c0b04b6ac)
 
-## 📦 Production Deployment
+### Scheduling & Throttling
+![Throttling Screenshot](https://github.com/user-attachments/assets/8028c0af-60ae-4a36-8215-e687d5789f7d)
 
-### Infrastructure Setup
-```terraform
-# terraform/main.tf
-resource "google_cloud_run_service" "api" {
-  name     = "email-automation-api"
-  location = "us-central1"
-  
-  template {
-    spec {
-      containers {
-        image = "gcr.io/project/email-automation-api"
-        
-        env {
-          name  = "DATABASE_URL"
-          value = google_firestore_database.main.url
-        }
-      }
-    }
-  }
-}
-```
+---
 
-### Monitoring Setup
-```python
-# backend/app/core/monitoring.py
-from opentelemetry import trace
-from prometheus_client import Counter, Histogram
-
-class Metrics:
-    email_sent = Counter(
-        'emails_sent_total',
-        'Number of emails sent',
-        ['status']
-    )
-    
-    generation_time = Histogram(
-        'email_generation_seconds',
-        'Time spent generating emails'
-    )
-```
-
-## 📚 API Documentation
-
-### Campaign Endpoints
-```python
-@router.post("/campaigns/", response_model=Campaign)
-async def create_campaign(
-    data: CampaignCreate,
-    service: CampaignService = Depends(get_campaign_service)
-):
-    """
-    Create a new email campaign.
-    
-    Parameters:
-    - template_id: ID of the email template
-    - recipients: List of recipient email addresses
-    - schedule: Optional scheduling parameters
-    - throttle: Optional throttling configuration
-    """
-    return await service.create_campaign(data)
-```
-
-## 🔒 Security Features
-
-### Rate Limiting
-```python
-# backend/app/core/middleware.py
-from fastapi import Request
-from redis import Redis
-
-class RateLimiter:
-    def __init__(self, redis: Redis):
-        self.redis = redis
-        
-    async def check_rate_limit(self, request: Request):
-        key = f"rate_limit:{request.client.host}"
-        current = self.redis.incr(key)
-        if current == 1:
-            self.redis.expire(key, 60)
-        return current <= 60
-```
-
-### Input Validation
-```python
-# backend/app/models/campaign.py
-from pydantic import BaseModel, EmailStr, validator
-
-class CampaignCreate(BaseModel):
-    template_id: str
-    recipients: List[EmailStr]
-    schedule: Optional[ScheduleConfig]
-    
-    @validator('recipients')
-    def validate_recipients(cls, v):
-        if len(v) > 1000:
-            raise ValueError('Maximum 1000 recipients per campaign')
-        return v
-```
-
-## 🧪 Testing
+## 🧪 **Testing**
 
 ### Backend Tests
-```python
-# backend/tests/services/test_campaign_service.py
-import pytest
-from app.services.campaign_service import CampaignService
-
-async def test_campaign_creation():
-    service = CampaignService(
-        queue_manager=MockQueueManager(),
-        email_generator=MockEmailGenerator(),
-        monitor=MockCampaignMonitor()
-    )
-    
-    campaign = await service.create_campaign(
-        CampaignCreate(
-            template_id="test",
-            recipients=["test@example.com"]
-        )
-    )
-    
-    assert campaign.status == "queued"
+Run automated tests:
+```bash
+pytest tests/
 ```
 
 ### Frontend Tests
-```typescript
-// frontend/tests/components/CampaignForm.test.tsx
-import { render, fireEvent, waitFor } from '@testing-library/react'
-import { CampaignForm } from '@/components/CampaignForm'
-
-describe('CampaignForm', () => {
-  it('validates recipient emails', async () => {
-    const { getByLabelText, getByText } = render(<CampaignForm />)
-    
-    fireEvent.change(getByLabelText('Recipients'), {
-      target: { value: 'invalid-email' },
-    })
-    
-    await waitFor(() => {
-      expect(getByText('Invalid email format')).toBeInTheDocument()
-    })
-  })
-})
+Run unit tests:
+```bash
+npm test
 ```
 
-## 🤝 Contributing
+---
 
-### Development Workflow
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit your changes: `git commit -m 'feat: add amazing feature'`
-4. Push to the branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+## 🚨 **Troubleshooting**
 
-### Code Style
-- Python: Black formatter, isort for imports
-- TypeScript: Prettier + ESLint
-- Commit messages: Conventional Commits
+| Issue                       | Possible Solution                           |
+|-----------------------------|---------------------------------------------|
+| Emails not sending          | Verify SES sender email and region.         |
+| API keys not working        | Double-check `.env` configuration.          |
+| Google Sheets error         | Ensure correct service account credentials. |
+| Delayed email delivery      | Adjust rate limits in `.env`.               |
 
-## 📄 License
+---
 
-MIT License - see [LICENSE.md](LICENSE.md)
+## 📄 **License**
+This project is licensed under the **MIT License**. Contributions are welcome.
 
+---
+
+## 🛠️ **Future Enhancements**
+- Multi-language support for email templates.
+- Enhanced analytics with predictive AI metrics.
+- Dynamic A/B testing for email campaigns.
+- Integration with additional ESPs like SendGrid and Mailgun.
+
+---
+
+### **Why This Project Stands Out**
+1. **AI Integration**: Leverages the power of Groq API for intelligent content personalization.
+2. **Scalability**: Designed to handle high volumes with robust backend architecture.
+3. **Real-Time Feedback**: Ensures actionable insights with live analytics dashboards.
+
+*Developed by **Meghana Sancheti** for **Breakout Consultancy Internship Assessment.***
+
+---

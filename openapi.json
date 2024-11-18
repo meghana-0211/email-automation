@@ -1,0 +1,821 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Email Automation API",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "/upload/csv": {
+            "post": {
+                "summary": "Upload Csv",
+                "operationId": "upload_csv_upload_csv_post",
+                "requestBody": {
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/Body_upload_csv_upload_csv_post"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/templates": {
+            "get": {
+                "summary": "List Templates",
+                "operationId": "list_templates_templates_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Template",
+                "operationId": "create_template_templates_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EmailTemplate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/templates/{template_id}": {
+            "get": {
+                "summary": "Get Template",
+                "operationId": "get_template_templates__template_id__get",
+                "parameters": [
+                    {
+                        "name": "template_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Template Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/jobs": {
+            "get": {
+                "summary": "List Jobs",
+                "operationId": "list_jobs_jobs_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "summary": "Create Job",
+                "operationId": "create_job_jobs_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/EmailJob"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/jobs/{job_id}": {
+            "get": {
+                "summary": "Get Job",
+                "operationId": "get_job_jobs__job_id__get",
+                "parameters": [
+                    {
+                        "name": "job_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Job Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/jobs/{job_id}/status": {
+            "get": {
+                "summary": "Get Job Status",
+                "operationId": "get_job_status_jobs__job_id__status_get",
+                "parameters": [
+                    {
+                        "name": "job_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Job Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/analytics/hourly": {
+            "get": {
+                "summary": "Get Hourly Analytics",
+                "operationId": "get_hourly_analytics_analytics_hourly_get",
+                "parameters": [
+                    {
+                        "name": "hours",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 24,
+                            "title": "Hours"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/google-sheets/connect": {
+            "post": {
+                "summary": "Connect Google Sheet",
+                "operationId": "connect_google_sheet_google_sheets_connect_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DataSource"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/": {
+            "get": {
+                "summary": "Health Check",
+                "operationId": "health_check__get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Body_upload_csv_upload_csv_post": {
+                "properties": {
+                    "file": {
+                        "type": "string",
+                        "format": "binary",
+                        "title": "File"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "file"
+                ],
+                "title": "Body_upload_csv_upload_csv_post"
+            },
+            "DataSource": {
+                "properties": {
+                    "type": {
+                        "$ref": "#/components/schemas/DataSourceType"
+                    },
+                    "source": {
+                        "type": "string",
+                        "title": "Source",
+                        "description": "URL for Google Sheet or file path for CSV"
+                    },
+                    "columns": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Columns"
+                    },
+                    "sheet_name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Sheet Name",
+                        "description": "Sheet name for Google Sheets"
+                    },
+                    "range": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Range",
+                        "description": "Cell range for Google Sheets"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "source"
+                ],
+                "title": "DataSource",
+                "description": "Model for handling different data sources"
+            },
+            "DataSourceType": {
+                "type": "string",
+                "enum": [
+                    "google_sheet",
+                    "csv"
+                ],
+                "title": "DataSourceType",
+                "description": "Supported data source types"
+            },
+            "EmailJob": {
+                "properties": {
+                    "id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Id"
+                    },
+                    "template_id": {
+                        "type": "string",
+                        "title": "Template Id"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/EmailStatus",
+                        "default": "pending"
+                    },
+                    "recipients": {
+                        "items": {
+                            "$ref": "#/components/schemas/Recipient"
+                        },
+                        "type": "array",
+                        "title": "Recipients"
+                    },
+                    "data_source": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/DataSource"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "schedule": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/EmailScheduling"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "throttle_rate": {
+                        "type": "integer",
+                        "maximum": 1000,
+                        "minimum": 1,
+                        "title": "Throttle Rate",
+                        "description": "Emails per hour rate limit",
+                        "default": 100
+                    },
+                    "retry_count": {
+                        "type": "integer",
+                        "maximum": 5,
+                        "minimum": 0,
+                        "title": "Retry Count",
+                        "default": 0
+                    },
+                    "retry_delay": {
+                        "type": "integer",
+                        "minimum": 60,
+                        "title": "Retry Delay",
+                        "description": "Delay in seconds between retries",
+                        "default": 300
+                    },
+                    "created_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Created At"
+                    },
+                    "updated_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Updated At"
+                    },
+                    "completed_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Completed At"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "title": "Metadata"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "template_id",
+                    "recipients"
+                ],
+                "title": "EmailJob",
+                "description": "Model for email sending jobs"
+            },
+            "EmailScheduling": {
+                "properties": {
+                    "enabled": {
+                        "type": "boolean",
+                        "title": "Enabled",
+                        "default": false
+                    },
+                    "start_time": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Start Time"
+                    },
+                    "end_time": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "End Time"
+                    },
+                    "timezone": {
+                        "type": "string",
+                        "title": "Timezone",
+                        "default": "UTC"
+                    },
+                    "batch_size": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "minimum": 1
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Batch Size"
+                    },
+                    "interval_minutes": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "minimum": 1
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Interval Minutes"
+                    },
+                    "max_emails_per_day": {
+                        "anyOf": [
+                            {
+                                "type": "integer",
+                                "minimum": 1
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Max Emails Per Day"
+                    }
+                },
+                "type": "object",
+                "title": "EmailScheduling",
+                "description": "Model for email scheduling configuration"
+            },
+            "EmailStatus": {
+                "type": "string",
+                "enum": [
+                    "pending",
+                    "processing",
+                    "scheduled",
+                    "sent",
+                    "delivered",
+                    "failed",
+                    "bounced",
+                    "opened",
+                    "clicked",
+                    "spam",
+                    "unsubscribed"
+                ],
+                "title": "EmailStatus",
+                "description": "Enum for tracking email status throughout the system"
+            },
+            "EmailTemplate": {
+                "properties": {
+                    "id": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Id"
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "minLength": 1,
+                        "title": "Name"
+                    },
+                    "subject": {
+                        "type": "string",
+                        "maxLength": 200,
+                        "minLength": 1,
+                        "title": "Subject"
+                    },
+                    "content": {
+                        "type": "string",
+                        "minLength": 1,
+                        "title": "Content"
+                    },
+                    "placeholders": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Placeholders"
+                    },
+                    "created_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Created At"
+                    },
+                    "updated_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Updated At"
+                    },
+                    "version": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Version",
+                        "description": "Template version for tracking changes",
+                        "default": 1
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "title": "Is Active",
+                        "default": true
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "title": "Metadata"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name",
+                    "subject",
+                    "content"
+                ],
+                "title": "EmailTemplate",
+                "description": "Model for email templates with personalization capabilities"
+            },
+            "HTTPValidationError": {
+                "properties": {
+                    "detail": {
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        },
+                        "type": "array",
+                        "title": "Detail"
+                    }
+                },
+                "type": "object",
+                "title": "HTTPValidationError"
+            },
+            "Recipient": {
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "title": "Email"
+                    },
+                    "data": {
+                        "type": "object",
+                        "title": "Data",
+                        "description": "Personalization data for email template"
+                    },
+                    "first_name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "First Name"
+                    },
+                    "last_name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Last Name"
+                    },
+                    "metadata": {
+                        "type": "object",
+                        "title": "Metadata"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "email"
+                ],
+                "title": "Recipient",
+                "description": "Model for email recipients with their personalization data"
+            },
+            "ValidationError": {
+                "properties": {
+                    "loc": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Location"
+                    },
+                    "msg": {
+                        "type": "string",
+                        "title": "Message"
+                    },
+                    "type": {
+                        "type": "string",
+                        "title": "Error Type"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "loc",
+                    "msg",
+                    "type"
+                ],
+                "title": "ValidationError"
+            }
+        }
+    }
