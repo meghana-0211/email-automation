@@ -1,53 +1,88 @@
-import pandas as pd
+import os
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
-import os.path
-import json
+import logging
 from typing import List, Dict
 from settings import settings
 
+logger = logging.getLogger(__name__)
+
 class SheetService:
-    SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+    SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
     
     def __init__(self):
-        self.creds = None
-        self.load_credentials()
+        self.creds = self.load_credentials()
     
     def load_credentials(self):
-        if os.path.exists('creds.json'):
-            with open('creds.json', 'r') as token:
-                self.creds = Credentials.from_authorized_user_file('creds.json', self.SCOPES)
-        
-        if not self.creds or not self.creds.valid:
-            if self.creds and self.creds.expired and self.creds.refresh_token:
-                self.creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    settings.GOOGLE_SHEETS_CREDENTIALS_PATH, self.SCOPES)
-                self.creds = flow.run_local_server(port=0)
+        try:
+            # Use service account credentials directly
+            from google.oauth2 import service_account
             
-            with open('creds.json', 'w') as token:
-                token.write(self.creds.to_json())
-    
+            credentials_path = r"C:\Users\Megha\OneDrive\Desktop\breakoutai\email-automation\backend\app\creds.json"
+            
+            if not os.path.exists(credentials_path):
+                raise FileNotFoundError(f"Credentials file not found at {credentials_path}")
+            
+            credentials = service_account.Credentials.from_service_account_file(
+                credentials_path, 
+                scopes=self.SCOPES
+            )
+            
+            return credentials
+        
+        except Exception as e:
+            logger.error(f"Failed to load credentials: {str(e)}")
+            raise
+
     def read_sheet(self, spreadsheet_id: str, range_name: str) -> List[Dict]:
-        service = build('sheets', 'v4', credentials=self.creds)
-        sheet = service.spreadsheets()
-        result = sheet.values().get(spreadsheetId=spreadsheet_id, range=range_name).execute()
-        values = result.get('values', [])
-        
-        if not values:
-            return []
+        if not self.creds:
+            raise ValueError("Google Sheets credentials not configured")
             
-        headers = values[0]
-        data = []
-        
-        for row in values[1:]:
-            row_dict = {}
-            for i, value in enumerate(row):
-                if i < len(headers):
-                    row_dict[headers[i]] = value
-            data.append(row_dict)
+        try:
+            service = build('sheets', 'v4', credentials=self.creds)
+            sheet = service.spreadsheets()
             
-        return data
+            logger.info(f"Fetching data from spreadsheet {spreadsheet_id}, range {range_name}")
+            result = sheet.values().get(
+                spreadsheetId=spreadsheet_id,
+                range=range_name
+            ).execute()
+            
+            values = result.get('values', [])
+            
+            if not values:
+                logger.warning("No data found in specified range")
+                return []
+            
+            headers = values[0]
+            data = []
+            
+            # Process rows into dictionaries
+            for row_idx, row in enumerate(values[1:], start=2):
+                row_dict = {}
+                for col_idx, value in enumerate(row):
+                    if col_idx < len(headers):
+                        row_dict[headers[col_idx]] = value
+                    else:
+                        logger.warning(f"Row {row_idx} has more columns than headers")
+                        break
+                data.append(row_dict)
+            
+            logger.info(f"Successfully read {len(data)} rows from sheet")
+            return data
+            
+        except Exception as e:
+            logger.error(f"Failed to read Google Sheet: {str(e)}")
+            raise
+
+    def validate_spreadsheet_access(self, spreadsheet_id: str) -> bool:
+        try:
+            service = build('sheets', 'v4', credentials=self.creds)
+            sheet = service.spreadsheets()
+            sheet.get(spreadsheetId=spreadsheet_id).execute()
+            return True
+        except Exception as e:
+            logger.error(f"Failed to access spreadsheet {spreadsheet_id}: {str(e)}")
+            return False

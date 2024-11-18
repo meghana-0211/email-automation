@@ -6,3 +6,16 @@
 2024-11-17 12:58:31,517 - __main__ - INFO - Scheduler started
 2024-11-17 12:58:42,298 - __main__ - INFO - Scheduler stopped
 2024-11-17 12:58:42,298 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2024-11-18 17:12:15,699 - services.sheet_services - INFO - Initiating new OAuth2 flow
+2024-11-18 17:12:15,700 - services.sheet_services - ERROR - Failed to load credentials: Google Sheets credentials file not found at creds.json
+2024-11-18 17:12:15,701 - services.sheet_services - ERROR - Failed to initialize SheetService: Google Sheets credentials file not found at creds.json
+2024-11-18 17:15:29,148 - services.sheet_services - INFO - Initiating new OAuth2 flow
+2024-11-18 17:15:29,150 - services.sheet_services - ERROR - Failed to load credentials: Google Sheets credentials file not found at creds.json
+2024-11-18 17:15:29,150 - services.sheet_services - ERROR - Failed to initialize SheetService: Google Sheets credentials file not found at creds.json
+2024-11-18 17:16:11,909 - services.sheet_services - ERROR - Failed to load credentials: Authorized user info was not in the expected format, missing fields client_secret, refresh_token.
+2024-11-18 17:16:11,910 - services.sheet_services - ERROR - Failed to initialize SheetService: Authorized user info was not in the expected format, missing fields client_secret, refresh_token.
+2024-11-18 18:23:29,685 - services.sheet_services - ERROR - Failed to load credentials: Authorized user info was not in the expected format, missing fields refresh_token, client_secret.
+2024-11-18 18:23:29,686 - services.sheet_services - ERROR - Failed to initialize SheetService: Authorized user info was not in the expected format, missing fields refresh_token, client_secret.
+2024-11-18 18:24:13,940 - services.sheet_services - ERROR - Failed to load credentials: Credentials file not found at creds.json
+2024-11-18 18:25:20,951 - services.sheet_services - ERROR - Failed to load credentials: Credentials file not found at creds.json
+2024-11-18 18:26:25,529 - services.sheet_services - ERROR - Failed to load credentials: Credentials file not found at creds.json

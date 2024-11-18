@@ -17,6 +17,6 @@ class Settings:
     # Groq Settings
     GROQ_API_KEY = os.getenv('GROQ_API_KEY')
 
-    GOOGLE_SHEETS_CREDENTIALS_PATH = os.getenv('backend/app/services/creds.json', 'creds.json')
+    GOOGLE_SHEETS_CREDENTIALS_PATH = os.getenv('backend/app/services/creds.json')
 
 settings = Settings()

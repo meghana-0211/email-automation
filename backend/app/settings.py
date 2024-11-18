@@ -10,6 +10,10 @@ class Settings:
     AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
     AWS_REGION = os.getenv('AWS_REGION', 'us-east-1')  # Default to us-east-1
 
+    FIREBASE_CREDENTIALS_PATH = os.getenv('FIREBASE_CREDENTIALS_PATH')
+
+    REDIS_URL = os.getenv('REDIS_URL')
+
     # SES Settings
     SES_SENDER_EMAIL = os.getenv('SES_SENDER_EMAIL')
     SES_CONFIGURATION_SET = os.getenv('SES_CONFIGURATION_SET')

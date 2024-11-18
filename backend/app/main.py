@@ -11,10 +11,18 @@ import json
 from typing import List, Optional
 from datetime import datetime
 from settings import settings
-from app.models import EmailTemplate, EmailJob, EmailStatus, DataSource, Recipient
+from models import EmailTemplate, EmailJob, EmailStatus, DataSource, Recipient
 import asyncio
+import uvicorn
 
+import os
+import sys
 
+# Add the parent directory to Python path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.insert(0, parent_dir)
+sys.path.insert(0, current_dir)
 
 
 logging.basicConfig(
@@ -29,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 # Initialize FastAPI app
-app = FastAPI(title="Email Automation API", version=settings.API_VERSION)
+app = FastAPI(title="Email Automation API")
 
 # Add CORS middleware
 app.add_middleware(
@@ -259,6 +267,8 @@ async def get_hourly_analytics(hours: int = 24):
         logger.error(f"Failed to get hourly analytics: {str(e)}")
         raise HTTPException(500, str(e))
 
+REQUIRED_COLUMNS = ['Company Name', 'Location', 'Email']
+
 @app.post("/google-sheets/connect")
 async def connect_google_sheet(data: DataSource):
     try:
@@ -267,13 +277,27 @@ async def connect_google_sheet(data: DataSource):
         
         sheet_data = sheet_service.read_sheet(
             spreadsheet_id=data.source.split('/')[-1],
-            range_name="A1:Z1000"  # Adjust range as needed
+            range_name="A1:Z1000"
         )
-        return {"columns": list(sheet_data[0].keys()) if sheet_data else [], "preview": sheet_data[:5]}
+        
+        if not sheet_data:
+            raise HTTPException(404, "No data found in sheet")
+        
+        columns = list(sheet_data[0].keys())
+        missing_columns = [col for col in REQUIRED_COLUMNS if col not in columns]
+        
+        if missing_columns:
+            raise HTTPException(400, f"Missing required columns: {', '.join(missing_columns)}")
+        
+        return {
+            "columns": columns, 
+            "preview": sheet_data[:5],
+            "total_recipients": len(sheet_data)
+        }
     except Exception as e:
         logger.error(f"Failed to connect to Google Sheet: {str(e)}")
         raise HTTPException(500, str(e))
-
+    
 @app.on_event("startup")
 async def startup_event():
     scheduler.start()
@@ -290,8 +314,8 @@ def create_app():
 
 if __name__ == "__main__":
     uvicorn.run(
-        "main:app",  # This should match your file name and app variable
-        host="0.0.0.0",
+        "main:Email Automation API",  # This should match your file name and app variable
+        host="12.0.0.1",
         port=8000,
         reload=True
     )
