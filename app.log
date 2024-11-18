@@ -1,0 +1,8 @@
+2024-11-17 12:56:31,456 - apscheduler.scheduler - INFO - Scheduler started
+2024-11-17 12:56:31,457 - __main__ - INFO - Scheduler started
+2024-11-17 12:56:47,780 - __main__ - INFO - Scheduler stopped
+2024-11-17 12:56:47,782 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2024-11-17 12:58:31,517 - apscheduler.scheduler - INFO - Scheduler started
+2024-11-17 12:58:31,517 - __main__ - INFO - Scheduler started
+2024-11-17 12:58:42,298 - __main__ - INFO - Scheduler stopped
+2024-11-17 12:58:42,298 - apscheduler.scheduler - INFO - Scheduler has been shut down

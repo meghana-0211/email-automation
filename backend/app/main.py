@@ -1,176 +1,99 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks, Request, Depends
+from fastapi import FastAPI, BackgroundTasks, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from google.oauth2.credentials import Credentials
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import Flow
-from googleapiclient.discovery import build
-import pandas as pd
 import logging
-from .config import settings
-from .middleware import AuthenticationMiddleware, LoggingMiddleware, RequestValidationMiddleware
-import asyncio
-from datetime import datetime, timedelta
-import json
-from typing import List, Optional, Dict
-from pydantic import BaseModel, EmailStr
+from logging.handlers import RotatingFileHandler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import redis
 from firebase_admin import credentials, firestore, initialize_app
 from google.cloud.firestore import SERVER_TIMESTAMP
-import boto3
-from botocore.exceptions import ClientError
-from groq import Groq
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.date import DateTrigger
-import uuid
-import logging
-from logging.handlers import RotatingFileHandler
-from typing import Dict, List, Optional, Union
-from enum import Enum
-from datetime import datetime, timezone
-from pydantic import BaseModel, EmailStr, validator
-from fastapi.responses import JSONResponse
-
-class WebhookEvent(BaseModel):
-    event_type: str
-    message_id: str
-    timestamp: datetime
-    recipient: EmailStr
-    metadata: Dict[str, any]
-
-class EmailMetrics(BaseModel):
-    sent: int
-    delivered: int
-    opened: int
-    bounced: int
-    failed: int
-    delivery_rate: float
-    open_rate: float
-
-class RateLimitConfig(BaseModel):
-    emails_per_hour: int
-    max_batch_size: int
-    concurrent_limit: int
+import pandas as pd
+import json
+from typing import List, Optional
+from datetime import datetime
+from settings import settings
+from app.models import EmailTemplate, EmailJob, EmailStatus, DataSource, Recipient
+import asyncio
 
 
 
 
-def setup_logging():
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            RotatingFileHandler(
-                'app.log',
-                maxBytes=10000000,  # 10MB
-                backupCount=5
-            ),
-            logging.StreamHandler()
-        ]
-    )
-
-# Setup logging
-setup_logging()
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        RotatingFileHandler('app.log', maxBytes=10000000, backupCount=5),
+        logging.StreamHandler()
+    ]
+)
 logger = logging.getLogger(__name__)
+
 
 # Initialize FastAPI app
 app = FastAPI(title="Email Automation API", version=settings.API_VERSION)
 
-# Add middleware
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-app.add_middleware(AuthenticationMiddleware)
-app.add_middleware(LoggingMiddleware)
-app.add_middleware(RequestValidationMiddleware)
-
-class EmailService:
-    def __init__(self):
-        # Initialize any resources the service needs
-        pass
-
-    async def generate_content(self, template: str, data: dict) -> str:
-        """
-        Generate email content by populating a template with data.
-        """
-        try:
-            # Use string formatting or a templating engine like Jinja2
-            content = template.format(**data)
-            return content
-        except KeyError as e:
-            raise ValueError(f"Missing data for template placeholder: {e}")
-
-    async def send_email(self, recipient: str, subject: str, content: str) -> str:
-        """
-        Simulate sending an email and return a message ID.
-        """
-        try:
-            # Example of a simulated email sending service
-            # Replace with actual email sending logic (e.g., SMTP, AWS SES, etc.)
-            logger.info(f"Sending email to {recipient} with subject: {subject}")
-            return str(uuid.uuid4())  # Simulate message ID
-        except Exception as e:
-            raise Exception(f"Failed to send email: {e}")
-
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 # Initialize services
 redis_client = redis.Redis.from_url(settings.REDIS_URL)
 scheduler = AsyncIOScheduler()
-email_service = EmailService()
-
-# Initialize Firebase
 cred = credentials.Certificate(settings.FIREBASE_CREDENTIALS_PATH)
 initialize_app(cred)
 db = firestore.client()
 
-# Process email job implementation
+from services.email_service import EmailService
+from services.sheet_services import SheetService
+from services.analytics_service import AnalyticsService
+
+# Initialize services
+email_service = EmailService()
+sheet_service = SheetService()
+analytics_service = AnalyticsService(db)
+
 async def process_email_job(job_id: str):
-    """Process email job with throttling and tracking"""
     try:
-        # Get job data
         job_ref = db.collection('jobs').document(job_id)
         job_data = job_ref.get().to_dict()
         
         if not job_data:
             logger.error(f"Job {job_id} not found")
             return
-            
-        # Update job status
-        await job_ref.update({'status': 'processing'})
         
-        # Get template
+        job_ref.update({'status': 'processing'})
         template_ref = db.collection('templates').document(job_data['template_id'])
         template_data = template_ref.get().to_dict()
         
         if not template_data:
             logger.error(f"Template {job_data['template_id']} not found")
-            await job_ref.update({'status': 'failed', 'error': 'Template not found'})
+            job_ref.update({'status': 'failed', 'error': 'Template not found'})
             return
-            
-        # Process recipients with throttling
+        
         throttle_rate = job_data.get('throttle_rate', settings.RATE_LIMIT_EMAILS_PER_HOUR)
-        delay = 3600 / throttle_rate  # seconds between emails
+        delay = 3600 / throttle_rate
         
         successful = 0
         failed = 0
         
         for recipient in job_data['recipients']:
             try:
-                # Generate personalized content
                 content = await email_service.generate_content(
                     template_data['content'],
                     recipient['data']
                 )
                 
-                # Send email
                 message_id = await email_service.send_email(
                     recipient['email'],
                     template_data['subject'],
                     content
                 )
                 
-                # Track delivery
-                await db.collection('email_tracking').document(message_id).set({
+                db.collection('email_tracking').document(message_id).set({
                     'job_id': job_id,
                     'recipient': recipient['email'],
                     'status': 'sent',
@@ -178,16 +101,13 @@ async def process_email_job(job_id: str):
                 })
                 
                 successful += 1
-                
-                # Apply throttling
                 await asyncio.sleep(delay)
                 
             except Exception as e:
                 logger.error(f"Failed to send email to {recipient['email']}: {str(e)}")
                 failed += 1
                 
-                # Track failure
-                await db.collection('email_tracking').document().set({
+                db.collection('email_tracking').document().set({
                     'job_id': job_id,
                     'recipient': recipient['email'],
                     'status': 'failed',
@@ -195,8 +115,7 @@ async def process_email_job(job_id: str):
                     'failed_at': SERVER_TIMESTAMP
                 })
         
-        # Update job status
-        await job_ref.update({
+        job_ref.update({
             'status': 'completed',
             'completed_at': SERVER_TIMESTAMP,
             'successful': successful,
@@ -205,188 +124,174 @@ async def process_email_job(job_id: str):
         
     except Exception as e:
         logger.error(f"Job {job_id} failed: {str(e)}")
-        await job_ref.update({
+        job_ref.update({
             'status': 'failed',
             'error': str(e),
             'failed_at': SERVER_TIMESTAMP
         })
+
+# API Routes
+@app.post("/upload/csv")
+async def upload_csv(file: UploadFile = File(...)):
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(400, "File must be a CSV")
+    
+    df = pd.read_csv(file.file)
+    return {
+        "columns": df.columns.tolist(),
+        "preview": df.head().to_dict('records')
+    }
+# Continuing from the previous imports and initialization...
+
+@app.post("/templates")
+async def create_template(template: EmailTemplate):
+    try:
+        template_dict = template.dict()
+        template_dict['created_at'] = SERVER_TIMESTAMP
+        template_dict['updated_at'] = SERVER_TIMESTAMP
+        doc_ref = db.collection('templates').document()
+        doc_ref.set(template_dict)
+        return {"id": doc_ref.id, **template_dict}
+    except Exception as e:
+        logger.error(f"Failed to create template: {str(e)}")
+        raise HTTPException(500, str(e))
+
+@app.get("/templates")
+async def list_templates():
+    try:
+        templates = []
+        for doc in db.collection('templates').stream():
+            templates.append({"id": doc.id, **doc.to_dict()})
+        return templates
+    except Exception as e:
+        logger.error(f"Failed to list templates: {str(e)}")
+        raise HTTPException(500, str(e))
+
+@app.get("/templates/{template_id}")
+async def get_template(template_id: str):
+    try:
+        doc = db.collection('templates').document(template_id).get()
+        if not doc.exists:
+            raise HTTPException(404, "Template not found")
+        return {"id": doc.id, **doc.to_dict()}
+    except Exception as e:
+        logger.error(f"Failed to get template: {str(e)}")
+        raise HTTPException(500, str(e))
+
+@app.post("/jobs")
+async def create_job(job: EmailJob, background_tasks: BackgroundTasks):
+    try:
+        # Validate template exists
+        template_ref = db.collection('templates').document(job.template_id)
+        if not template_ref.get().exists:
+            raise HTTPException(404, "Template not found")
         
-        # Implement retry mechanism
-        if job_data.get('retry_count', 0) < 3:
-            await job_ref.update({
-                'retry_count': job_data.get('retry_count', 0) + 1
-            })
-            # Schedule retry after 5 minutes
+        # Check rate limits
+        current_hour = datetime.now().replace(minute=0, second=0, microsecond=0)
+        rate_key = f"email_rate:{current_hour.timestamp()}"
+        current_rate = int(redis_client.get(rate_key) or 0)
+        
+        if current_rate + len(job.recipients) > settings.RATE_LIMIT_EMAILS_PER_HOUR:
+            raise HTTPException(429, "Rate limit exceeded for this hour")
+        
+        # Create job document
+        job_dict = job.dict()
+        job_dict['created_at'] = SERVER_TIMESTAMP
+        job_dict['updated_at'] = SERVER_TIMESTAMP
+        job_dict['status'] = EmailStatus.PENDING
+        
+        doc_ref = db.collection('jobs').document()
+        doc_ref.set(job_dict)
+        
+        # Schedule job processing
+        if job.schedule_time and job.schedule_time > datetime.now():
             scheduler.add_job(
                 process_email_job,
-                trigger=DateTrigger(run_date=datetime.now() + timedelta(minutes=5)),
-                args=[job_id],
-                id=f"{job_id}_retry_{job_data.get('retry_count', 0) + 1}"
+                'date',
+                run_date=job.schedule_time,
+                args=[doc_ref.id]
             )
-
-# Google Sheets Integration
-class GoogleSheetsService:
-    def __init__(self):
-        self.scopes = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+        else:
+            background_tasks.add_task(process_email_job, doc_ref.id)
         
-    async def get_credentials(self, token: dict) -> Credentials:
-        return Credentials.from_authorized_user_info(token, self.scopes)
-        
-    async def read_sheet(self, spreadsheet_id: str, range_name: str, credentials: Credentials) -> pd.DataFrame:
-        try:
-            service = build('sheets', 'v4', credentials=credentials)
-            sheet = service.spreadsheets()
-            result = sheet.values().get(
-                spreadsheetId=spreadsheet_id,
-                range=range_name
-            ).execute()
-            
-            values = result.get('values', [])
-            if not values:
-                raise ValueError("No data found in sheet")
-                
-            df = pd.DataFrame(values[1:], columns=values[0])
-            return df
-            
-        except Exception as e:
-            logger.error(f"Failed to read Google Sheet: {str(e)}")
-            raise HTTPException(
-                status_code=500,
-                detail=f"Failed to read Google Sheet: {str(e)}"
-            )
-
-sheets_service = GoogleSheetsService()
-
-# OAuth2 callback implementation
-@app.get("/api/auth/callback")
-async def auth_callback(code: str, state: str):
-    """Handle OAuth2 callback for email provider authentication"""
-    try:
-        # Verify state token
-        account_id = redis_client.get(f"oauth_state_{state}")
-        if not account_id:
-            raise HTTPException(status_code=400, detail="Invalid state token")
-            
-        account = email_service.connected_accounts.get(account_id.decode())
-        if not account:
-            raise HTTPException(status_code=404, detail="Account not found")
-            
-        # Exchange code for tokens
-        flow = account['flow']
-        flow.fetch_token(code=code)
-        
-        # Store credentials
-        credentials = flow.credentials
-        account['credentials'] = {
-            'token': credentials.token,
-            'refresh_token': credentials.refresh_token,
-            'token_uri': credentials.token_uri,
-            'client_id': credentials.client_id,
-            'client_secret': credentials.client_secret,
-            'scopes': credentials.scopes
-        }
-        account['status'] = 'connected'
-        
-        # Clean up state token
-        redis_client.delete(f"oauth_state_{state}")
-        
-        return {"status": "success", "account_id": account_id.decode()}
-        
+        return {"id": doc_ref.id, **job_dict}
     except Exception as e:
-        logger.error(f"OAuth callback failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to create job: {str(e)}")
+        raise HTTPException(500, str(e))
 
-# Google Sheets connection endpoint
-@app.post("/api/connect/sheets")
-async def connect_google_sheets(
-    spreadsheet_id: str,
-    range_name: str,
-    credentials: dict
-):
-    """Connect and read Google Sheets data"""
+@app.get("/jobs")
+async def list_jobs():
     try:
-        creds = await sheets_service.get_credentials(credentials)
-        df = await sheets_service.read_sheet(spreadsheet_id, range_name, creds)
-        
-        # Convert DataFrame to list of recipients
-        recipients = []
-        for _, row in df.iterrows():
-            data = row.to_dict()
-            if 'email' not in data:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Sheet must contain 'email' column"
-                )
-            recipients.append({
-                'email': data.pop('email'),
-                'data': data
-            })
-            
-        return {
-            "columns": df.columns.tolist(),
-            "preview": df.head().to_dict('records'),
-            "recipients": recipients
-        }
-        
+        jobs = []
+        for doc in db.collection('jobs').stream():
+            jobs.append({"id": doc.id, **doc.to_dict()})
+        return jobs
     except Exception as e:
-        logger.error(f"Failed to connect Google Sheets: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to list jobs: {str(e)}")
+        raise HTTPException(500, str(e))
 
-# Error recovery endpoint
-@app.post("/api/jobs/{job_id}/retry")
-async def retry_failed_job(job_id: str):
-    """Retry a failed email job"""
+@app.get("/jobs/{job_id}")
+async def get_job(job_id: str):
     try:
-        job_ref = db.collection('jobs').document(job_id)
-        job_data = job_ref.get().to_dict()
-        
-        if not job_data:
-            raise HTTPException(status_code=404, detail="Job not found")
-            
-        if job_data['status'] != 'failed':
-            raise HTTPException(
-                status_code=400,
-                detail="Only failed jobs can be retried"
-            )
-            
-        # Reset job status and retry count
-        await job_ref.update({
-            'status': 'pending',
-            'retry_count': 0,
-            'error': None
-        })
-        
-        # Schedule immediate retry
-        background_tasks = BackgroundTasks()
-        background_tasks.add_task(process_email_job, job_id)
-        
-        return {"status": "success", "message": "Job scheduled for retry"}
-        
+        doc = db.collection('jobs').document(job_id).get()
+        if not doc.exists:
+            raise HTTPException(404, "Job not found")
+        return {"id": doc.id, **doc.to_dict()}
     except Exception as e:
-        logger.error(f"Failed to retry job {job_id}: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to get job: {str(e)}")
+        raise HTTPException(500, str(e))
 
-# Startup and shutdown events
+@app.get("/jobs/{job_id}/status")
+async def get_job_status(job_id: str):
+    try:
+        stats = await analytics_service.get_email_stats(job_id)
+        return stats
+    except Exception as e:
+        logger.error(f"Failed to get job status: {str(e)}")
+        raise HTTPException(500, str(e))
+
+@app.get("/analytics/hourly")
+async def get_hourly_analytics(hours: int = 24):
+    try:
+        stats = await analytics_service.get_hourly_stats(hours)
+        return stats
+    except Exception as e:
+        logger.error(f"Failed to get hourly analytics: {str(e)}")
+        raise HTTPException(500, str(e))
+
+@app.post("/google-sheets/connect")
+async def connect_google_sheet(data: DataSource):
+    try:
+        if data.type != "google_sheet":
+            raise HTTPException(400, "Invalid data source type")
+        
+        sheet_data = sheet_service.read_sheet(
+            spreadsheet_id=data.source.split('/')[-1],
+            range_name="A1:Z1000"  # Adjust range as needed
+        )
+        return {"columns": list(sheet_data[0].keys()) if sheet_data else [], "preview": sheet_data[:5]}
+    except Exception as e:
+        logger.error(f"Failed to connect to Google Sheet: {str(e)}")
+        raise HTTPException(500, str(e))
+
 @app.on_event("startup")
 async def startup_event():
-    """Initialize services on startup"""
-    try:
-        scheduler.start()
-        logger.info("Application started successfully")
-    except Exception as e:
-        logger.error(f"Failed to start application: {str(e)}")
-        raise
+    scheduler.start()
+    logger.info("Application started, scheduler initialized")
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Cleanup on shutdown"""
-    try:
-        scheduler.shutdown()
-        redis_client.close()
-        logger.info("Application shut down successfully")
-    except Exception as e:
-        logger.error(f"Error during shutdown: {str(e)}")
+    scheduler.shutdown()
+    redis_client.close()
+    logger.info("Application shutting down")
+
+def create_app():
+    return app
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)    
+    uvicorn.run(
+        "main:app",  # This should match your file name and app variable
+        host="0.0.0.0",
+        port=8000,
+        reload=True
+    )
