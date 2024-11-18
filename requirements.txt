@@ -1,0 +1,65 @@
+# --- Backend Dependencies ---
+# FastAPI for backend API
+fastapi==0.95.0  
+uvicorn==0.22.0  
+
+# Authentication and Security
+python-jose==3.3.0  
+passlib[bcrypt]==1.7.4  
+
+# Firestore Integration
+google-cloud-firestore==2.11.0  
+
+# Redis for Queue Management
+redis==5.0.0  
+
+# Email Service Provider Integration (AWS SES)
+boto3==1.28.0  
+
+# Google Sheets API
+google-api-python-client==2.70.0  
+google-auth==2.20.0  
+google-auth-httplib2==0.2.0  
+
+# AI Content Generation
+openai==0.27.8  
+
+# Scheduling Tasks
+apscheduler==3.10.2  
+
+# Utilities
+pydantic==1.10.9  
+python-dotenv==1.0.0  
+
+# --- Frontend Development Dependencies ---
+# Next.js and Tailwind CSS are Node.js-based. Ensure you include these for compatibility
+next==13.4.12  
+react==18.2.0  
+tailwindcss==3.3.3  
+
+# --- Development Tools ---
+# Linting and Formatting
+black==23.9.1  
+flake8==6.1.0  
+
+# Testing
+pytest==7.4.2  
+pytest-asyncio==0.21.0  
+
+# Monitoring and Logging
+loguru==0.7.0  
+
+# --- Extra Utilities ---
+# File Uploads
+aiofiles==23.1.0  
+
+# JSON Handling
+orjson==3.9.1  
+
+# WebSocket Support
+websockets==11.0.3  
+
+# --- Frontend Dependencies ---
+# Node.js packages installed via npm/yarn (not Python dependencies)
+# Run separately in the frontend directory:
+# npm install next react react-dom tailwindcss autoprefixer postcss
