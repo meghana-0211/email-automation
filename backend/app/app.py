@@ -10,7 +10,7 @@ import pandas as pd
 import json
 from typing import List, Optional
 from datetime import datetime
-from settings import settings
+from settings import Settings
 from models import EmailTemplate, EmailJob, EmailStatus, DataSource, Recipient
 import asyncio
 import uvicorn
@@ -49,9 +49,9 @@ app.add_middleware(
 )
 
 # Initialize services
-redis_client = redis.Redis.from_url(settings.REDIS_URL)
+redis_client = redis.Redis.from_url(Settings.REDIS_URL)
 scheduler = AsyncIOScheduler()
-cred = credentials.Certificate(settings.FIREBASE_CREDENTIALS_PATH)
+cred = credentials.Certificate(Settings.FIREBASE_CREDENTIALS_PATH)
 initialize_app(cred)
 db = firestore.client()
 
@@ -63,6 +63,7 @@ from services.analytics_service import AnalyticsService
 email_service = EmailService()
 sheet_service = SheetService()
 analytics_service = AnalyticsService(db)
+
 
 async def process_email_job(job_id: str):
     try:
@@ -82,7 +83,7 @@ async def process_email_job(job_id: str):
             job_ref.update({'status': 'failed', 'error': 'Template not found'})
             return
         
-        throttle_rate = job_data.get('throttle_rate', settings.RATE_LIMIT_EMAILS_PER_HOUR)
+        throttle_rate = job_data.get('throttle_rate', Settings.RATE_LIMIT_EMAILS_PER_HOUR)
         delay = 3600 / throttle_rate
         
         successful = 0
@@ -151,6 +152,7 @@ async def upload_csv(file: UploadFile = File(...)):
     }
 # Continuing from the previous imports and initialization...
 
+
 @app.post("/templates")
 async def create_template(template: EmailTemplate):
     try:
@@ -174,6 +176,8 @@ async def list_templates():
     except Exception as e:
         logger.error(f"Failed to list templates: {str(e)}")
         raise HTTPException(500, str(e))
+
+
 
 @app.get("/templates/{template_id}")
 async def get_template(template_id: str):
@@ -199,7 +203,7 @@ async def create_job(job: EmailJob, background_tasks: BackgroundTasks):
         rate_key = f"email_rate:{current_hour.timestamp()}"
         current_rate = int(redis_client.get(rate_key) or 0)
         
-        if current_rate + len(job.recipients) > settings.RATE_LIMIT_EMAILS_PER_HOUR:
+        if current_rate + len(job.recipients) > Settings.RATE_LIMIT_EMAILS_PER_HOUR:
             raise HTTPException(429, "Rate limit exceeded for this hour")
         
         # Create job document
@@ -226,6 +230,7 @@ async def create_job(job: EmailJob, background_tasks: BackgroundTasks):
     except Exception as e:
         logger.error(f"Failed to create job: {str(e)}")
         raise HTTPException(500, str(e))
+    
 
 @app.get("/jobs")
 async def list_jobs():
@@ -298,6 +303,8 @@ async def connect_google_sheet(data: DataSource):
         logger.error(f"Failed to connect to Google Sheet: {str(e)}")
         raise HTTPException(500, str(e))
     
+
+    
 @app.on_event("startup")
 async def startup_event():
     scheduler.start()
@@ -314,8 +321,12 @@ def create_app():
 
 if __name__ == "__main__":
     uvicorn.run(
-        "main:Email Automation API",  # This should match your file name and app variable
-        host="12.0.0.1",
+        app, 
+        host="127.0.0.1",
         port=8000,
         reload=True
     )
+
+@app.get("/")
+async def health_check():
+    return {"status": "healthy"}

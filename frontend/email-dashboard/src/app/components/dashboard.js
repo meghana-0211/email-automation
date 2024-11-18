@@ -1,49 +1,122 @@
-
 'use client';
 
-import React from 'react';
-import  { useState} from 'react';
-import { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Upload, Mail, Settings, BarChart2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs/tabs";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
+import { apiService } from '../services/api';
+
 
 const Dashboard = () => {
   const [emailTemplate, setEmailTemplate] = useState('');
+  const [templateName, setTemplateName] = useState('');
   const [availableFields, setAvailableFields] = useState([]);
   const [csvData, setCsvData] = useState(null);
-  const [isClient, setIsClient] = useState(false); // State to track if it's client-side
+  const [sheetUrl, setSheetUrl] = useState('');
+  const [templates, setTemplates] = useState([]);
+  const [analytics, setAnalytics] = useState({
+    totalSent: 0,
+    pending: 0,
+    delivered: 0,
+    failed: 0
+  });
 
   useEffect(() => {
-    // This will run only on the client side, as useEffect doesn't run on the server
-    setIsClient(true);
+    fetchTemplates();
+    fetchHourlyAnalytics();
   }, []);
 
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0];
-    const reader = new FileReader();
-    
-    reader.onload = (e) => {
-      const text = e.target.result;
-      const rows = text.split('\n');
-      const headers = rows[0].split(',');
-      setAvailableFields(headers);
-      setCsvData(text);
-    };
-    
-    reader.readAsText(file);
+  const fetchTemplates = async () => {
+    try {
+      const fetchedTemplates = await apiService.listTemplates();
+      setTemplates(fetchedTemplates);
+    } catch (error) {
+      toast.error('Failed to fetch templates');
+    }
   };
-  
+
+  const fetchHourlyAnalytics = async () => {
+    try {
+      const hourlyStats = await apiService.getHourlyAnalytics();
+      const totalStats = hourlyStats.reduce((acc, stat) => ({
+        totalSent: acc.totalSent + stat.sent,
+        pending: acc.pending + stat.sent,
+        delivered: acc.delivered + stat.delivered,
+        failed: acc.failed + stat.failed
+      }), { totalSent: 0, pending: 0, delivered: 0, failed: 0 });
+
+      setAnalytics(totalStats);
+    } catch (error) {
+      toast.error('Failed to fetch analytics');
+    }
+  };
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    try {
+      const result = await apiService.uploadCsv(file);
+      setAvailableFields(result.columns);
+      setCsvData(result.preview);
+      toast.success('CSV uploaded successfully');
+    } catch (error) {
+      toast.error('CSV upload failed');
+    }
+  };
+
+  const handleGoogleSheetConnect = async () => {
+    try {
+      const result = await apiService.connectGoogleSheet(sheetUrl);
+      setAvailableFields(result.columns);
+      setCsvData(result.preview);
+      toast.success('Google Sheet connected');
+    } catch (error) {
+      toast.error('Failed to connect Google Sheet');
+    }
+  };
+
+  const saveTemplate = async () => {
+    try {
+      const templateData = {
+        name: templateName,
+        content: emailTemplate,
+        subject: 'Automated Email'  // You might want to add a subject input
+      };
+      const result = await apiService.createTemplate(templateData);
+      toast.success('Template saved successfully');
+      fetchTemplates();
+    } catch (error) {
+      toast.error('Failed to save template');
+    }
+  };
+
+  const createEmailJob = async () => {
+    try {
+      // This is a simplified example. You'd likely want more configuration
+      const jobData = {
+        template_id: templates[0].id,  // Use first template as example
+        recipients: csvData.map(row => ({
+          email: row.Email,
+          data: row
+        })),
+        throttle_rate: 50  // Emails per hour
+      };
+      const result = await apiService.createEmailJob(jobData);
+      toast.success('Email job created');
+    } catch (error) {
+      toast.error('Failed to create email job');
+    }
+  };
+
+
+
   const insertField = (field) => {
     setEmailTemplate(prev => `${prev} {${field}}`);
   };
 
-  if (!isClient) {
-    return null; // Ensure that it doesn't render on the server side
-  }
+
   return (
     <div className="p-6">
       <Tabs defaultValue="upload" className="w-full">

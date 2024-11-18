@@ -1,0 +1,42 @@
+2024-11-18 20:09:51,704 - apscheduler.scheduler - INFO - Scheduler started
+2024-11-18 20:09:51,705 - app - INFO - Application started, scheduler initialized
+2024-11-18 20:21:44,496 - app - INFO - Application shutting down
+2024-11-18 20:21:44,544 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2024-11-18 20:22:00,124 - apscheduler.scheduler - INFO - Scheduler started
+2024-11-18 20:22:00,125 - app - INFO - Application started, scheduler initialized
+2024-11-18 20:22:49,668 - app - INFO - Application shutting down
+2024-11-18 20:22:49,671 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2024-11-18 20:23:03,414 - apscheduler.scheduler - INFO - Scheduler started
+2024-11-18 20:23:03,415 - app - INFO - Application started, scheduler initialized
+2024-11-18 20:23:46,547 - app - INFO - Application shutting down
+2024-11-18 20:23:46,575 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2024-11-18 20:23:54,340 - apscheduler.scheduler - INFO - Scheduler started
+2024-11-18 20:23:54,341 - app - INFO - Application started, scheduler initialized
+2024-11-18 20:24:14,036 - app - INFO - Application shutting down
+2024-11-18 20:24:14,044 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2024-11-18 20:24:24,807 - apscheduler.scheduler - INFO - Scheduler started
+2024-11-18 20:24:24,809 - app - INFO - Application started, scheduler initialized
+2024-11-18 20:24:45,087 - app - INFO - Application shutting down
+2024-11-18 20:24:45,088 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2024-11-18 20:24:51,132 - apscheduler.scheduler - INFO - Scheduler started
+2024-11-18 20:24:51,133 - app - INFO - Application started, scheduler initialized
+2024-11-18 20:25:13,717 - app - INFO - Application shutting down
+2024-11-18 20:25:13,722 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2024-11-18 20:25:19,078 - apscheduler.scheduler - INFO - Scheduler started
+2024-11-18 20:25:19,079 - app - INFO - Application started, scheduler initialized
+2024-11-18 21:42:51,473 - app - ERROR - Failed to list templates: 404 The database (default) does not exist for project email-sender-83b6d Please visit https://console.cloud.google.com/datastore/setup?project=email-sender-83b6d to add a Cloud Datastore or Cloud Firestore database. 
+2024-11-18 21:42:51,888 - app - ERROR - Failed to get hourly analytics: 404 The database (default) does not exist for project email-sender-83b6d Please visit https://console.cloud.google.com/datastore/setup?project=email-sender-83b6d to add a Cloud Datastore or Cloud Firestore database. 
+2024-11-18 21:44:00,748 - app - ERROR - Failed to list templates: 404 The database (default) does not exist for project email-sender-83b6d Please visit https://console.cloud.google.com/datastore/setup?project=email-sender-83b6d to add a Cloud Datastore or Cloud Firestore database. 
+2024-11-18 21:44:00,932 - app - ERROR - Failed to get hourly analytics: 404 The database (default) does not exist for project email-sender-83b6d Please visit https://console.cloud.google.com/datastore/setup?project=email-sender-83b6d to add a Cloud Datastore or Cloud Firestore database. 
+2024-11-18 21:46:16,707 - app - INFO - Application shutting down
+2024-11-18 21:46:16,737 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2024-11-18 21:46:31,671 - apscheduler.scheduler - INFO - Scheduler started
+2024-11-18 21:46:31,673 - app - INFO - Application started, scheduler initialized
+2024-11-18 22:00:22,639 - app - INFO - Application shutting down
+2024-11-18 22:00:22,672 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2024-11-18 22:00:33,498 - apscheduler.scheduler - INFO - Scheduler started
+2024-11-18 22:00:33,499 - app - INFO - Application started, scheduler initialized
+2024-11-18 22:01:30,777 - app - INFO - Application shutting down
+2024-11-18 22:01:30,807 - apscheduler.scheduler - INFO - Scheduler has been shut down
+2024-11-18 22:01:49,633 - apscheduler.scheduler - INFO - Scheduler started
+2024-11-18 22:01:49,634 - app - INFO - Application started, scheduler initialized
