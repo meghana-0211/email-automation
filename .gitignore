@@ -43,3 +43,5 @@ docker-compose.yml*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+token.json*

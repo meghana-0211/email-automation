@@ -1,3 +1,5 @@
+#email_service.py
+
 import boto3
 from botocore.exceptions import ClientError
 from groq import Groq
